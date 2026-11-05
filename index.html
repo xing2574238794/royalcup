@@ -1340,6 +1340,31 @@ if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
 }
 nav('home');
+
+/* 首次打开时自动导入从旧地址导出的错题（只做一次，按题干去重，答案以当前题库为准） */
+(function(){
+  try{
+    if(localStorage.getItem('rc_migrated')==='1') return;
+    fetch('migrate.json',{cache:'no-store'})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(arr){
+        if(!Array.isArray(arr)||!arr.length){ localStorage.setItem('rc_migrated','1'); return; }
+        var have={}; state.wrong.forEach(function(x){ have[x.q]=1; });
+        var add=0;
+        arr.forEach(function(q){
+          if(q&&q.q&&!have[q.q]){ state.wrong.push(Object.assign({},q,{ts:q.ts||Date.now()})); have[q.q]=1; add++; }
+        });
+        state.wrong=state.wrong.slice(-300);
+        LS.set('wrong',state.wrong); LS.set('wrong_bak',state.wrong);
+        localStorage.setItem('rc_migrated','1');
+        if(add){
+          if(state.screen==='home'||state.screen==='wrong') render();
+          toast('已从旧地址导入 '+add+' 道错题');
+        }
+      })
+      .catch(function(){});
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
