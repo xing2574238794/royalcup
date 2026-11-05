@@ -1,0 +1,17 @@
+{
+  "name": "皇家杯 · 决赛模拟器",
+  "short_name": "皇家杯",
+  "description": "犬猫营养学决赛全真模拟：半决赛、总决赛、题库练习与错题本。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f6f9",
+  "theme_color": "#c8102e",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
