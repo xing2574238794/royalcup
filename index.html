@@ -390,7 +390,7 @@ function renderHome(){
     <button class="homebtn" onclick="nav('wrong')"><span class="ico">🗂️</span><b>错题本</b><span>已收录 ${state.wrong.length} 题</span></button>
     <button class="homebtn" onclick="nav('about')"><span class="ico">ℹ️</span><b>赛制说明</b><span>评分规则、时间、权重与答题技巧</span></button>
   </div>
-  <p class="note" style="margin-top:14px">题目由本地题库随机抽题；简答与案例按评分要点自评（点选要点即得分）。数据保存在本机浏览器，不联网。</p>`;
+  <p class="note" style="margin-top:14px">题目由本地题库随机抽题；简答与案例按评分要点自评（点选要点即得分）。数据保存在本机浏览器，不联网。 · 构建 v7</p>`;
 }
 
 /* ---------- 半决赛 ---------- */
@@ -881,6 +881,7 @@ function renderWrong(){
       <button class="btn sm" onclick="exportWrong()">⬇ 备份到文件</button>
       <button class="btn sm ghost" onclick="pickWrongFile()">⬆ 从文件恢复</button>
       <button class="btn sm ghost" onclick="restoreWrongBak()">↺ 恢复自动备份</button>
+      <button class="btn sm ghost" onclick="importMigrate(true)">📥 导入旧错题</button>
     </div>
     <input type="file" id="wrongFile" accept=".json,application/json" style="display:none" onchange="importWrong(this)">
     ${w.length?w.map(q=>`<div class="hr"></div><p style="font-size:15px;margin:0 0 6px"><b>${q.q}</b></p>
@@ -1341,30 +1342,28 @@ if('serviceWorker' in navigator && location.protocol.startsWith('http')){
 }
 nav('home');
 
-/* 首次打开时自动导入从旧地址导出的错题（只做一次，按题干去重，答案以当前题库为准） */
-(function(){
-  try{
-    if(localStorage.getItem('rc_migrated')==='v3') return;
-    fetch('migrate.json',{cache:'no-store'})
-      .then(function(r){ return r.ok?r.json():null; })
-      .then(function(arr){
-        if(!Array.isArray(arr)||!arr.length){ localStorage.setItem('rc_migrated','v3'); return; }
-        var have={}; state.wrong.forEach(function(x){ have[x.q]=1; });
-        var add=0;
-        arr.forEach(function(q){
-          if(q&&q.q&&!have[q.q]){ state.wrong.push(Object.assign({},q,{ts:q.ts||Date.now()})); have[q.q]=1; add++; }
-        });
-        state.wrong=state.wrong.slice(-300);
-        LS.set('wrong',state.wrong); LS.set('wrong_bak',state.wrong);
-        localStorage.setItem('rc_migrated','v3');
-        if(add){
-          if(state.screen==='home'||state.screen==='wrong') render();
-          toast('已从旧地址导入 '+add+' 道错题');
-        }
-      })
-      .catch(function(){});
-  }catch(e){}
-})();
+/* 错题导入：把 migrate.json 合并进错题本（按题干去重，答案以当前题库为准） */
+function importMigrate(manual){
+  return fetch('migrate.json?v=106&t='+Date.now(),{cache:'no-store'})
+    .then(function(r){ return r.ok?r.json():null; })
+    .then(function(arr){
+      if(!Array.isArray(arr)||!arr.length){ if(manual) alert('没有可导入的错题文件'); return 0; }
+      var have={}; state.wrong.forEach(function(x){ have[x.q]=1; });
+      var add=0;
+      arr.forEach(function(q){
+        if(q&&q.q&&!have[q.q]){ state.wrong.push(Object.assign({},q,{ts:q.ts||Date.now()})); have[q.q]=1; add++; }
+      });
+      state.wrong=state.wrong.slice(-300);
+      LS.set('wrong',state.wrong); LS.set('wrong_bak',state.wrong);
+      localStorage.setItem('rc_migrated','v3');
+      if(state.screen==='wrong'||state.screen==='home') render();
+      if(manual) alert('导入完成：新增 '+add+' 道，当前错题本共 '+state.wrong.length+' 道');
+      else if(add) toast('已从旧地址导入 '+add+' 道错题');
+      return add;
+    })
+    .catch(function(){ if(manual) alert('导入失败，检查网络后再试'); return 0; });
+}
+(function(){ try{ if(localStorage.getItem('rc_migrated')==='v3') return; importMigrate(false); }catch(e){} })();
 </script>
 </body>
 </html>
